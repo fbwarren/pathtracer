@@ -28,9 +28,13 @@ bool Triangle::has_intersection(const Ray &r) const {
   // function records the "intersection" while this function only tests whether
   // there is a intersection.
 
-
+  Vector3D intersect = mollerTrumbore(r);
+  if (intersect[0] < 0 or intersect[0] < r.min_t or intersect[0] > r.max_t)
+    { return false; }
+  if (intersect[1] < 0 or intersect[1] > 1 or intersect[2] < 0 or intersect[2] > 1 or intersect[1]+intersect[2] > 1)
+    { return false; }
+  r.max_t = intersect[0];
   return true;
-
 }
 
 bool Triangle::intersect(const Ray &r, Intersection *isect) const {
@@ -38,10 +42,29 @@ bool Triangle::intersect(const Ray &r, Intersection *isect) const {
   // implement ray-triangle intersection. When an intersection takes
   // place, the Intersection data should be updated accordingly
 
+    Vector3D intersect = mollerTrumbore(r);
+    if (intersect[0] < 0 or intersect[0] < r.min_t or intersect[0] > r.max_t)
+        { return false; }
+    if (intersect[1] < 0 or intersect[1] > 1 or intersect[2] < 0 or intersect[2] > 1 or intersect[1]+intersect[2] > 1 )
+        { return false; }
+    r.max_t = intersect[0];
+    isect->t = intersect[0];
+    isect->n = (1-intersect[1]-intersect[2])*n1 + intersect[1]*n2 + intersect[2]*n3;
+    isect->primitive = this;
+    isect->bsdf = get_bsdf();
 
-  return true;
+    return true;
+}
 
-
+Vector3D Triangle::mollerTrumbore(const Ray &r) const {
+    Vector3D e1, e2, s, s1, s2;
+    e1 = p2 - p1;
+    e2 = p3 - p1;
+    s = r.o - p1;
+    s1 = cross(r.d, e2);
+    s2 = cross(s, e1);
+    Vector3D ret = Vector3D();
+    return (1 / dot(s1, e1)) * Vector3D(dot(s2, e2), dot(s1, s), dot(s2, r.d));
 }
 
 void Triangle::draw(const Color &c, float alpha) const {

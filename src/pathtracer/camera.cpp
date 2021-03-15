@@ -190,12 +190,11 @@ void Camera::load_settings(string filename) {
  * This function generates a ray from camera perspective, passing through camera / sensor plane (x,y)
  */
 Ray Camera::generate_ray(double x, double y) const {
-
-  // TODO (Part 1.1):
+    // transform from image space to camera space
   double cameraSpace_x = (2 * x - 1) * tan(0.5 * hFov * PI / 180.0);
   double cameraSpace_y = (2 * y - 1) * tan(0.5 * vFov * PI / 180.0);
   double cameraSpace_z = -1.0;
-  // transform camera space coords to world space coords using c2w
+  // transform camera space to world space coords using
   Vector3D direction = c2w * Vector3D(cameraSpace_x, cameraSpace_y, cameraSpace_z);
   // calculate and normalize world space ray direction
   direction.normalize();

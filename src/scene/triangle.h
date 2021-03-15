@@ -57,6 +57,13 @@ public:
   bool intersect(const Ray& r, Intersection* i) const;
 
   /**
+   * Optimized triangle intersection algorithm
+   * @param r ray to test
+   * @return a vector of time and 2 barycentric coordinates
+   */
+  Vector3D mollerTrumbore(const Ray &r) const;
+
+  /**
    * Get BSDF.
    * In the case of a triangle, the surface material BSDF is stored in 
    * the mesh it belongs to. 
