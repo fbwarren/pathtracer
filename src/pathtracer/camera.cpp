@@ -1,3 +1,5 @@
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "modernize-return-braced-init-list"
 #include "camera.h"
 
 #include <iostream>
@@ -190,14 +192,18 @@ void Camera::load_settings(string filename) {
 Ray Camera::generate_ray(double x, double y) const {
 
   // TODO (Part 1.1):
-  // compute position of the input sensor sample coordinate on the
-  // canonical sensor plane one unit away from the pinhole.
-  // Note: hFov and vFov are in degrees.
-  //
-
-
-  return Ray(pos, Vector3D(0, 0, -1));
-
+  double camera_x = (2 * x - 1) * tan(0.5 * hFov * PI / 180.0);
+  double camera_y = (2 * y - 1) * tan(0.5 * vFov * PI / 180.0);
+  double camera_z = pos.z;
+  // transform camera space coords to world space coords using c2w
+  Vector3D worldCoords = c2w * Vector3D(camera_x, camera_y, camera_z);
+  // calculate and normalize world space ray direction
+  Vector3D direction = (worldCoords - pos);
+  direction.normalize();
+  // return world space ray
+  return Ray(pos, direction);
 }
 
 } // namespace CGL
+
+#pragma clang diagnostic pop
