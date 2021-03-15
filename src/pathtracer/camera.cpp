@@ -192,13 +192,12 @@ void Camera::load_settings(string filename) {
 Ray Camera::generate_ray(double x, double y) const {
 
   // TODO (Part 1.1):
-  double camera_x = (2 * x - 1) * tan(0.5 * hFov * PI / 180.0);
-  double camera_y = (2 * y - 1) * tan(0.5 * vFov * PI / 180.0);
-  double camera_z = pos.z;
+  double cameraSpace_x = (2 * x - 1) * tan(0.5 * hFov * PI / 180.0);
+  double cameraSpace_y = (2 * y - 1) * tan(0.5 * vFov * PI / 180.0);
+  double cameraSpace_z = -1.0;
   // transform camera space coords to world space coords using c2w
-  Vector3D worldCoords = c2w * Vector3D(camera_x, camera_y, camera_z);
+  Vector3D direction = c2w * Vector3D(cameraSpace_x, cameraSpace_y, cameraSpace_z);
   // calculate and normalize world space ray direction
-  Vector3D direction = (worldCoords - pos);
   direction.normalize();
   // return world space ray
   return Ray(pos, direction);

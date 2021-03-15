@@ -181,12 +181,21 @@ void PathTracer::raytrace_pixel(size_t x, size_t y) {
 
   int num_samples = ns_aa;          // total samples to evaluate
   Vector2D origin = Vector2D(x, y); // bottom left corner of the pixel
+  Vector3D estRadiance = Vector3D(.0, .0, .0);
 
+  for (int i=0; i<num_samples; i++) {
+      // get random pixel sample and normalize by image dimensions
+      Vector2D pixelSample = origin + gridSampler->get_sample();
+      pixelSample.x /= sampleBuffer.w;
+      pixelSample.y /= sampleBuffer.h;
+      // generate ray and estimate illumination, update total est radiance
+      Ray sampleRay = camera->generate_ray(pixelSample.x, pixelSample.y);
+      estRadiance += PathTracer::est_radiance_global_illumination(sampleRay);
+  }
+  estRadiance /= ns_aa;     // normalize by number of samples
 
-  sampleBuffer.update_pixel(Vector3D(0.2, 1.0, 0.8), x, y);
+  sampleBuffer.update_pixel(estRadiance, x, y);
   sampleCountBuffer[x + y * sampleBuffer.w] = num_samples;
-
-
 }
 
 void PathTracer::autofocus(Vector2D loc) {
