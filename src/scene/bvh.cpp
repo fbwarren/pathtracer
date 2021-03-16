@@ -51,12 +51,6 @@ void BVHAccel::drawOutline(BVHNode *node, const Color &c, float alpha) const {
 BVHNode *BVHAccel::construct_bvh(std::vector<Primitive *>::iterator start,
                                  std::vector<Primitive *>::iterator end,
                                  size_t max_leaf_size) {
-  // TODO (Part 2.1):
-  // Construct a BVH from the given vector of primitives and maximum leaf
-  // size configuration. The starter code build a BVH aggregate with a
-  // single leaf node (which is also the root) that encloses all the
-  // primitives.
-  int size = distance(start, end);
   // box enclosing all primitives
   BBox bbox;
   for (auto p = start; p != end; p++) {
@@ -69,6 +63,7 @@ BVHNode *BVHAccel::construct_bvh(std::vector<Primitive *>::iterator start,
   node->end = end;
 
   // base case (node doesn't contain more than max allowed)
+  int size = distance(start, end);
   if (size < max_leaf_size) {
       return node;
   }
@@ -79,13 +74,13 @@ BVHNode *BVHAccel::construct_bvh(std::vector<Primitive *>::iterator start,
   axis = (extent[0] > extent[1]) ? 0 : 1;
   axis = (extent[axis] > extent[2]) ? axis : 2;
 
-  // compute average prim bounding box centroid
+  // compute average  centroid
   Vector3D sum = Vector3D(.0, .0, .0);
   for (auto p = start; p != end; p++)
       sum += (*p)->get_bbox().centroid();
   sum /= size;
 
-  // split along centroid on chosen axis
+  // split along centroid on chosen axis (split plane)
   auto *left = new vector<Primitive *>();
   auto *right = new vector<Primitive *>();
   auto func = [&](Primitive *p) {
@@ -96,6 +91,7 @@ BVHNode *BVHAccel::construct_bvh(std::vector<Primitive *>::iterator start,
   };
   for_each(start, end, func);
 
+  // make sure both subsets aren't empty
   if (left->empty()) {
       left->push_back(*(right->end()));
       right->pop_back();
@@ -116,9 +112,6 @@ bool BVHAccel::has_intersection(const Ray &ray, BVHNode *node) const {
   // Take note that this function has a short-circuit that the
   // Intersection version cannot, since it returns as soon as it finds
   // a hit, it doesn't actually have to find the closest hit.
-
-
-
   for (auto p : primitives) {
     total_isects++;
     if (p->has_intersection(ray))
@@ -132,9 +125,6 @@ bool BVHAccel::has_intersection(const Ray &ray, BVHNode *node) const {
 bool BVHAccel::intersect(const Ray &ray, Intersection *i, BVHNode *node) const {
   // TODO (Part 2.3):
   // Fill in the intersect function.
-
-
-
   bool hit = false;
   for (auto p : primitives) {
     total_isects++;
