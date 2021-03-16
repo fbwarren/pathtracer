@@ -51,28 +51,63 @@ void BVHAccel::drawOutline(BVHNode *node, const Color &c, float alpha) const {
 BVHNode *BVHAccel::construct_bvh(std::vector<Primitive *>::iterator start,
                                  std::vector<Primitive *>::iterator end,
                                  size_t max_leaf_size) {
-
   // TODO (Part 2.1):
   // Construct a BVH from the given vector of primitives and maximum leaf
   // size configuration. The starter code build a BVH aggregate with a
   // single leaf node (which is also the root) that encloses all the
   // primitives.
-
-
+  int size = distance(start, end);
+  // box enclosing all primitives
   BBox bbox;
-
   for (auto p = start; p != end; p++) {
     BBox bb = (*p)->get_bbox();
     bbox.expand(bb);
   }
 
-  BVHNode *node = new BVHNode(bbox);
+  BVHNode *node = new BVHNode(bbox);    // initialize node with bounding box (L & R are null)
   node->start = start;
   node->end = end;
 
+  // base case (node doesn't contain more than max allowed)
+  if (size < max_leaf_size) {
+      return node;
+  }
+
+  // compute longest axis
+  int axis = 0;
+  Vector3D extent = bbox.extent;
+  axis = (extent[0] > extent[1]) ? 0 : 1;
+  axis = (extent[axis] > extent[2]) ? axis : 2;
+
+  // compute average prim bounding box centroid
+  Vector3D sum = Vector3D(.0, .0, .0);
+  for (auto p = start; p != end; p++)
+      sum += (*p)->get_bbox().centroid();
+  sum /= size;
+
+  // split along centroid on chosen axis
+  auto *left = new vector<Primitive *>();
+  auto *right = new vector<Primitive *>();
+  auto func = [&](Primitive *p) {
+      if (p->get_bbox().centroid()[axis] < sum[axis])
+          left->push_back(p);
+      else
+          right->push_back(p);
+  };
+  for_each(start, end, func);
+
+  if (left->empty()) {
+      left->push_back(*(right->end()));
+      right->pop_back();
+  } else if (right->empty()) {
+      right->push_back(*(left->end()));
+      left->pop_back();
+  }
+
+  node->l = construct_bvh(left->begin(), left->end(), max_leaf_size);
+  node->r = construct_bvh(right->begin(), right->end(), max_leaf_size);
+
   return node;
-
-
 }
 
 bool BVHAccel::has_intersection(const Ray &ray, BVHNode *node) const {
