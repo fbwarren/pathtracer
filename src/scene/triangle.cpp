@@ -23,31 +23,26 @@ Triangle::Triangle(const Mesh *mesh, size_t v1, size_t v2, size_t v3) {
 BBox Triangle::get_bbox() const { return bbox; }
 
 bool Triangle::has_intersection(const Ray &r) const {
-  // Part 1, Task 3: implement ray-triangle intersection
-  // The difference between this function and the next function is that the next
-  // function records the "intersection" while this function only tests whether
-  // there is a intersection.
-
   Vector3D intersect = mollerTrumbore(r);
+  // verify t is valid
   if (intersect[0] < 0 or intersect[0] < r.min_t or intersect[0] > r.max_t)
     { return false; }
+  // verify barycentric coordinates are valid
   if (intersect[1] < 0 or intersect[1] > 1 or intersect[2] < 0 or intersect[2] > 1 or intersect[1]+intersect[2] > 1)
     { return false; }
-  r.max_t = intersect[0];
+  r.max_t = intersect[0];   // cache intersect
+
   return true;
 }
 
 bool Triangle::intersect(const Ray &r, Intersection *isect) const {
-  // Part 1, Task 3:
-  // implement ray-triangle intersection. When an intersection takes
-  // place, the Intersection data should be updated accordingly
-
     Vector3D intersect = mollerTrumbore(r);
     if (intersect[0] < 0 or intersect[0] < r.min_t or intersect[0] > r.max_t)
         { return false; }
     if (intersect[1] < 0 or intersect[1] > 1 or intersect[2] < 0 or intersect[2] > 1 or intersect[1]+intersect[2] > 1 )
         { return false; }
     r.max_t = intersect[0];
+    // update intersection
     isect->t = intersect[0];
     isect->n = (1-intersect[1]-intersect[2])*n1 + intersect[1]*n2 + intersect[2]*n3;
     isect->primitive = this;
