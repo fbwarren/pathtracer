@@ -77,12 +77,26 @@ Before implementing BVH, these scenes took at least half a minute each to render
 
 ## **Part 3: Direct Illumination**
 
-TODO:
+To simulate realistic lighting, we need to be able to simulate the flow of light from one place to another. This includes things like various types of reflection, sources and sinks of light, and so on. When trying to calculate the amount of light at various points in a scene, we use integrals. Integrating to find the amount of light flowing on, though, or from a sufrace can quickly become expensive. To avoid this, we estimate the value of the integral by points in the scene at random. In this part, there were two implementations of direct lighting.  
 
-- Walk through both implementations of the direct lighting function.
-- Show some images rendered with both implementations of the direct lighting function.
-- Focus on one particular scene with at least one area light and compare the noise levels in soft shadows when rendering with 1, 4, 16, and 64 light rays (the -l flag) and with 1 sample per pixel (the -s flag) using light sampling, not uniform hemisphere sampling.
-- Compare the results between uniform hemisphere sampling and lighting sampling in a one-paragraph analysis.
+Uniform random sampling was the first implementation. In this, implementation, when we have a point on an object that we want to compute the light value of, we simply create samples uniformly at random in the form of rays from that point in random directions away from it (in the direction of the hemisphere defined by its surface normal) and check if light is coming from those directions. Once we have estimated how much light is falling on a point, we use that point's *bidirectional scattering distribution funtion* to figure out how much of it is going toward our eye/camera. Remember to normalize!
+
+The second lighting estimation implementation was importance sampling. It is pretty much the same, but instead of randomly sampling rays from the intersection point toward a random direction in its hemisphere, we only sample from the light sources. This makes sense since we are trying to measure light in a scene. Why would we want to waste samples on things that don't provide light?
+
+The main difference between the two direct illumination implementations is that uniform sampling was noiser than importance sampling. Here are some pictures rendered using both illumination implementations at different amounts of light rays and light sampling. I personally like the look of noise, it illicits feelings of nostolgia in me even though I'm too young to remember film cameras.
+| <img src="./images/spheres_uniform.png">| <img src="./images/spheres_importance.png"> 
+|:--:|:--:|
+| Uniform sampling: (32 samples/pixel,  32 light rays) |  Importance sampling (32 samples/pixel, 32 light rays) | 
+
+| <img src="./images/bunny1.png">| <img src="./images/bunny4.png"> 
+|:--:|:--:|
+| 1x/pixel importance sampling |  4x/pixel importance sampling | 
+
+| <img src="./images/bunny16.png">| <img src="./images/bunny64.png"> 
+|:--:|:--:|
+| 16x/pixel importance sampling |  64x/pixel importance sampling | 
+
+
 
 ## **Part 4: Global Illumination**
 
