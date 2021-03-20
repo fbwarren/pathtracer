@@ -1,60 +1,299 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
-<head>
-<style>  
-    div.padded {  
-      padding-top: 0px;  
-      padding-right: 100px;  
-      padding-bottom: 0.25in;  
-      padding-left: 100px;  
-    }  
-  </style> 
-<title>Your Name  |  CS 184</title>
-<meta http-equiv="content-type" content="text/html; charset=utf-8" />
-<link rel="stylesheet" type="text/css" href="style.css" media="screen" />
-</head>
-<body>
-<br />
-<h1 align="middle">Assignment 3: PathTracer</h1>
-    <h2 align="middle">Your Name</h2>
+<!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>&lt;center&gt; &midast;&midast;CS 184&colon; Computer Graphics and Imaging&comma; Spring 2021&midast;&midast; &lt;&excl;-- omit in toc --&gt;</title>
+        <style>
+</style>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.10.2/dist/katex.min.css" integrity="sha384-yFRtMMDnQtDRO8rLpMIKrtPCD5jdktao2TV19YiZYWMDkUR5GQZR/NOVTdquEx1j" crossorigin="anonymous">
+<link href="https://cdn.jsdelivr.net/npm/katex-copytex@latest/dist/katex-copytex.min.css" rel="stylesheet" type="text/css">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/markdown.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/highlight.css">
+<style>
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe WPC', 'Segoe UI', system-ui, 'Ubuntu', 'Droid Sans', sans-serif;
+                font-size: 14px;
+                line-height: 1.6;
+            }
+        </style>
+        <style>
+.task-list-item { list-style-type: none; } .task-list-item-checkbox { margin-left: -20px; vertical-align: middle; }
+</style>
+        
+        <script src="https://cdn.jsdelivr.net/npm/katex-copytex@latest/dist/katex-copytex.min.js"></script>
+        
+    </head>
+    <body class="vscode-body vscode-light">
+        <style>
+          body {
+    padding: 100px;
+    width: 1000px;
+    margin: auto;
+    text-align: left;
+    font-weight: 300;
+    font-family: 'Open Sans', sans-serif;
+    color: #121212;
+  }
+  h1, h2, h3, h4 {
+    font-family: 'Source Sans Pro', sans-serif;
+  }
+</style>
+<h1 id="center-cs-184-computer-graphics-and-imaging-spring-2021-"><center> <strong>CS 184: Computer Graphics and Imaging, Spring 2021</strong> <!-- omit in toc --></h1>
+<h2 id="center-project-3-path-tracing-"><center> <strong>Project 3: Path Tracing</strong> <!-- omit in toc --></h2>
+<h2 id="center-frank-warren-center-"><center> <strong>Frank Warren</strong> </center> <!-- omit in toc --></h2>
+<h2 id="contents-"><strong>Contents</strong> <!-- omit in toc --></h2>
+<ul>
+<li><a href="#overview"><strong>Overview</strong></a></li>
+<li><a href="#part-1-ray-generation-and-scene-intersection"><strong>Part 1: Ray Generation and Scene Intersection</strong></a></li>
+<li><a href="#part-2-bounding-volume-hierarchy"><strong>Part 2: Bounding Volume Hierarchy</strong></a></li>
+<li><a href="#part-3-direct-illumination"><strong>Part 3: Direct Illumination</strong></a></li>
+<li><a href="#part-4-global-illumination"><strong>Part 4: Global Illumination</strong></a></li>
+<li><a href="#part-5-adaptive-sampling"><strong>Part 5: Adaptive Sampling</strong></a></li>
+</ul>
+<h2 id="overview"><strong>Overview</strong></h2>
+<p>The aim of this project is to implement a physics-based graphics renderer using a light pathtracing algorithm. Some of the ideas that will be used in this project include ray-scene intersection, acceleration structures, and physically based lighting and materials. The completed project will be able to generate realistic pictures.</p>
+<h2 id="part-1-ray-generation-and-scene-intersection"><strong>Part 1: Ray Generation and Scene Intersection</strong></h2>
+<p>When we want to render something, it is given as a normalized <code>(x, y)</code> coordinate in the <strong>image space</strong>. Basically, this is just some pixel. Then, given the vertical and horizonal field of view angles <code>hFov</code> and <code>vFov</code>, we can translate the location of this pixel into the 3d <strong>camera space</strong>. This space is defined with a camera at the origin looking down the <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo>−</mo><mi>Z</mi></mrow><annotation encoding="application/x-tex">-Z</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.76666em;vertical-align:-0.08333em;"></span><span class="mord">−</span><span class="mord mathdefault" style="margin-right:0.07153em;">Z</span></span></span></span> axis toward a plane (the <strong>virtual sensor</strong>) that's perpendicular to the <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>Z</mi></mrow><annotation encoding="application/x-tex">Z</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.68333em;vertical-align:0em;"></span><span class="mord mathdefault" style="margin-right:0.07153em;">Z</span></span></span></span> axis. The top right and bottom left of this plane (from the camera's point of view) is at the points <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false">(</mo><mi>t</mi><mi>a</mi><mi>n</mi><mo stretchy="false">(</mo><mn>0.5</mn><mo>⋅</mo><mi>h</mi><mi>F</mi><mi>o</mi><mi>v</mi><mo stretchy="false">)</mo><mo separator="true">,</mo><mi>t</mi><mi>a</mi><mi>n</mi><mo stretchy="false">(</mo><mn>0.5</mn><mo>⋅</mo><mi>v</mi><mi>F</mi><mi>o</mi><mi>v</mi><mo stretchy="false">)</mo><mo separator="true">,</mo><mo>−</mo><mn>1</mn><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">(tan(0.5 \cdot hFov), tan(0.5 \cdot vFov), -1)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mopen">(</span><span class="mord mathdefault">t</span><span class="mord mathdefault">a</span><span class="mord mathdefault">n</span><span class="mopen">(</span><span class="mord">0</span><span class="mord">.</span><span class="mord">5</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">⋅</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathdefault">h</span><span class="mord mathdefault" style="margin-right:0.13889em;">F</span><span class="mord mathdefault">o</span><span class="mord mathdefault" style="margin-right:0.03588em;">v</span><span class="mclose">)</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.16666666666666666em;"></span><span class="mord mathdefault">t</span><span class="mord mathdefault">a</span><span class="mord mathdefault">n</span><span class="mopen">(</span><span class="mord">0</span><span class="mord">.</span><span class="mord">5</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">⋅</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathdefault" style="margin-right:0.03588em;">v</span><span class="mord mathdefault" style="margin-right:0.13889em;">F</span><span class="mord mathdefault">o</span><span class="mord mathdefault" style="margin-right:0.03588em;">v</span><span class="mclose">)</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.16666666666666666em;"></span><span class="mord">−</span><span class="mord">1</span><span class="mclose">)</span></span></span></span> and <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false">(</mo><mo>−</mo><mi>t</mi><mi>a</mi><mi>n</mi><mo stretchy="false">(</mo><mn>0.5</mn><mo>⋅</mo><mi>h</mi><mi>F</mi><mi>o</mi><mi>v</mi><mo stretchy="false">)</mo><mo separator="true">,</mo><mo>−</mo><mi>t</mi><mi>a</mi><mi>n</mi><mo stretchy="false">(</mo><mn>0.5</mn><mo>⋅</mo><mi>v</mi><mi>F</mi><mi>o</mi><mi>v</mi><mo stretchy="false">)</mo><mo separator="true">,</mo><mo>−</mo><mn>1</mn><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">(-tan(0.5 \cdot hFov), -tan(0.5 \cdot vFov), -1)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mopen">(</span><span class="mord">−</span><span class="mord mathdefault">t</span><span class="mord mathdefault">a</span><span class="mord mathdefault">n</span><span class="mopen">(</span><span class="mord">0</span><span class="mord">.</span><span class="mord">5</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">⋅</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathdefault">h</span><span class="mord mathdefault" style="margin-right:0.13889em;">F</span><span class="mord mathdefault">o</span><span class="mord mathdefault" style="margin-right:0.03588em;">v</span><span class="mclose">)</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.16666666666666666em;"></span><span class="mord">−</span><span class="mord mathdefault">t</span><span class="mord mathdefault">a</span><span class="mord mathdefault">n</span><span class="mopen">(</span><span class="mord">0</span><span class="mord">.</span><span class="mord">5</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">⋅</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathdefault" style="margin-right:0.03588em;">v</span><span class="mord mathdefault" style="margin-right:0.13889em;">F</span><span class="mord mathdefault">o</span><span class="mord mathdefault" style="margin-right:0.03588em;">v</span><span class="mclose">)</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.16666666666666666em;"></span><span class="mord">−</span><span class="mord">1</span><span class="mclose">)</span></span></span></span> respectively. Finally, we can translate the point in the camera space into a point in the <strong>world space</strong> by using the rotation matrix <code>c2w</code>. The world space is pretty much the same idea as the camera space but now the camera isn't locked to the origin facing down the <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo>−</mo><mi>Z</mi></mrow><annotation encoding="application/x-tex">-Z</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.76666em;vertical-align:-0.08333em;"></span><span class="mord">−</span><span class="mord mathdefault" style="margin-right:0.07153em;">Z</span></span></span></span> axis.</p>
+<p>After all of this is done, we are left with a point in the world space which we can use, along with the position of the camera, to generate a ray pointed at the point in world space from the camera.</p>
+<p>Now that we've implemented a way to generate rays, we want to determine if those rays intersect objects in a scene. To determine if a ray intersects some triangle, we can rely on the plane equation <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>p</mi><mo>:</mo><mo stretchy="false">(</mo><mi>p</mi><mo>−</mo><msup><mi>p</mi><mo mathvariant="normal" lspace="0em" rspace="0em">′</mo></msup><mo stretchy="false">)</mo><mo>∗</mo><mi>N</mi><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">p:(p-p&#x27;) * N = 0</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.625em;vertical-align:-0.19444em;"></span><span class="mord mathdefault">p</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span><span class="mrel">:</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mopen">(</span><span class="mord mathdefault">p</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span></span><span class="base"><span class="strut" style="height:1.001892em;vertical-align:-0.25em;"></span><span class="mord"><span class="mord mathdefault">p</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.751892em;"><span style="top:-3.063em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">′</span></span></span></span></span></span></span></span></span><span class="mclose">)</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">∗</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span></span><span class="base"><span class="strut" style="height:0.68333em;vertical-align:0em;"></span><span class="mord mathdefault" style="margin-right:0.10903em;">N</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span></span><span class="base"><span class="strut" style="height:0.64444em;vertical-align:0em;"></span><span class="mord">0</span></span></span></span>. The idea of determining if a point is on a plane by examining if it forms a line perpendicular to the normal of the plane with some known point the plane carries over exactly to finding intersections with triangles. Triangles are linear, so to figure out if a ray intersects a triangle, we use the same strategy but check to see if the resulting intersection point is inside the triangle (by comparing normals).</p>
+<p>There is an optimized algorithm for finding the time a ray intersects a triangle and the barycentric coordinates of the intersection known as the <a href="https://en.wikipedia.org/wiki/M%C3%B6ller%E2%80%93Trumbore_intersection_algorithm">Moller Trumbore Algorithm</a>. I implemented this algorithm in my implementation for triangle intersections.</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center"><img src="file:////home/fbwarren/Desktop/cs184/p3-1-pathtracer-sp21-teamname2/docs/images/mollertrumbore.jpg" width=550></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">Moller Trumbore Algorithm</td>
+</tr>
+</tbody>
+</table>
+<p>Once a time and barycentric coordinate pair is found, we must verify that the given time is nonnegative, the barycentric coordinates sum to 1, and the intersection is in the triangle.</p>
+<p>The process for sphere intersection is pretty much the same as triangle intersection. We take advantage of the general sphere defining formula to solve for <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>t</mi></mrow><annotation encoding="application/x-tex">t</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.61508em;vertical-align:0em;"></span><span class="mord mathdefault">t</span></span></span></span> values. There was no special algorithm used to implement sphere-ray intersection. Finding the time(s) a ray intersects a sphere basically boiled down to solving the quadratic formula.</p>
+<p>Here's some images with normal shading generated using these ray generation and scene intersection implementations:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center"><img src="file:////home/fbwarren/Desktop/cs184/p3-1-pathtracer-sp21-teamname2/docs/images/spheres.png"></th>
+<th style="text-align:center"><img src="file:////home/fbwarren/Desktop/cs184/p3-1-pathtracer-sp21-teamname2/docs/images/banana.png"></th>
+<th style="text-align:center"><img src="file:////home/fbwarren/Desktop/cs184/p3-1-pathtracer-sp21-teamname2/docs/images/bunny.png"></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+<td style="text-align:center"></td>
+</tr>
+</tbody>
+</table>
+<h2 id="part-2-bounding-volume-hierarchy"><strong>Part 2: Bounding Volume Hierarchy</strong></h2>
+<p>A <a href="https://en.wikipedia.org/wiki/Bounding_volume_hierarchy">bounding volume hierarchy</a> (BVH) is a tree structure used to organized a set of geometric objects (things with length, volume, etc.). The basic idea of a bounding volume is to define boxes that contain objects in space such that we can efficiently find them. This is useful in ray tracing because everytime we cast a ray into a scene, we need to find out exactly what objects it will intersect, and with a BVH we can easily narrow down the objects by simply ignoring the ones we know <em>for sure</em> won't be intersected. In this project, the BVH is implemented as a binary tree. Each node points to a bounding box that contains a set of primitives (geometric objects). The left and right children of each nonleaf node points to nodes that represent the two partitions of the bounding box. The primitives in each node are tracked with two iterators: <code>start</code> and <code>end</code>.</p>
+<p>The bulk of the work when constructing a BVH comes from choosing and implementing a heuristic to split the objects in a scene in a way that minimizes the costs associated with ray tracing computations (i.e. the scene is split not too broadly or finely, along well chosen split points, etc). There are a number of metrics that can be considered in a heuristic such as the surface area of each primitive, the average location of each primitive, the number of primitives that lay on each side of a potential split plane, and others.</p>
+<p>In this project, the heuristic that was used to split a bounding box started by finding the axis for the box's largest dimension. Then, the split point along that dimesnion was computed as the average centroid (in that dimension) of the primitive's bounding boxes. After both of these steps, we essential have direction and a point and therefore we have a split plane.</p>
+<p>I actually spent an embarassingly long amount of time on this part because after implemented a BVH correctly and the methods for intersecting lines with bounding volumes, I forgot to change the provided code to loop <em><strong>only</strong></em> over primitives contained inside a bounding box that's intersected. Every time a ray intersected with a bounding box, I was testing intersection with every single primitive in the scene. Also, I was having a problem where my images would render flipped with some small amount of seemingly random primitives not being rendered. This was due to a short circuit in the expression <code>intersect(ray, intersect, left) || intersect(ray, intersect, right)</code> that was causing the right side to not be evaluated everytime there happened to be an intersect in the left bounding box, even though the right bounding box might contain an object that would've been intersected first.</p>
+<p>Anyways, here's some complex geometries that render much more efficiently after BVH was implemented.</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center"><img src="file:////home/fbwarren/Desktop/cs184/p3-1-pathtracer-sp21-teamname2/docs/images/dragon.png"></th>
+<th style="text-align:center"><img src="file:////home/fbwarren/Desktop/cs184/p3-1-pathtracer-sp21-teamname2/docs/images/cblucy.png"></th>
+<th style="text-align:center"><img src="file:////home/fbwarren/Desktop/cs184/p3-1-pathtracer-sp21-teamname2/docs/images/wall-e.png"></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">Rendered in 0.0495s</td>
+<td style="text-align:center">Rendered in 0.0619s</td>
+<td style="text-align:center">Rendered in 0.0753s</td>
+</tr>
+</tbody>
+</table>
+<p>Before implementing BVH, these scenes took at least half a minute each to render. I've never felt so powerful.</p>
+<h2 id="part-3-direct-illumination"><strong>Part 3: Direct Illumination</strong></h2>
+<p>To simulate realistic lighting, we need to be able to simulate the flow of light from one place to another. This includes things like various types of reflection, sources and sinks of light, and so on. When trying to calculate the amount of light at various points in a scene, we use integrals. Integrating to find the amount of light flowing on, though, or from a sufrace can quickly become expensive. To avoid this, we estimate the value of the integral by points in the scene at random. In this part, there were two implementations of direct lighting.</p>
+<p>Uniform random sampling was the first implementation. In this, implementation, when we have a point on an object that we want to compute the light value of, we simply create samples uniformly at random in the form of rays from that point in random directions away from it (in the direction of the hemisphere defined by its surface normal) and check if light is coming from those directions. Once we have estimated how much light is falling on a point, we use that point's <em>bidirectional scattering distribution funtion</em> to figure out how much of it is going toward our eye/camera. Remember to normalize!</p>
+<p>The second lighting estimation implementation was importance sampling. It is pretty much the same, but instead of randomly sampling rays from the intersection point toward a random direction in its hemisphere, we only sample from the light sources. This makes sense since we are trying to measure light in a scene. Why would we want to waste samples on things that don't provide light?</p>
+<p>The main difference between the two direct illumination implementations is that uniform sampling was noiser than importance sampling. Here are some pictures rendered using both illumination implementations at different amounts of light rays and light sampling. I personally like the look of noise, it illicits feelings of nostolgia in me even though I'm too young to remember film cameras.</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center"><img src="file:////home/fbwarren/Desktop/cs184/p3-1-pathtracer-sp21-teamname2/docs/images/spheres_uniform.png"></th>
+<th style="text-align:center"><img src="file:////home/fbwarren/Desktop/cs184/p3-1-pathtracer-sp21-teamname2/docs/images/spheres_importance.png"></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">Uniform sampling: (32 samples/pixel,  32 light rays)</td>
+<td style="text-align:center">Importance sampling (32 samples/pixel, 32 light rays)</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th style="text-align:center"><img src="file:////home/fbwarren/Desktop/cs184/p3-1-pathtracer-sp21-teamname2/docs/images/bunny1.png"></th>
+<th style="text-align:center"><img src="file:////home/fbwarren/Desktop/cs184/p3-1-pathtracer-sp21-teamname2/docs/images/bunny4.png"></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">1 ray 1x/pixel importance sampling</td>
+<td style="text-align:center">1 ray 4x/pixel importance sampling</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th style="text-align:center"><img src="file:////home/fbwarren/Desktop/cs184/p3-1-pathtracer-sp21-teamname2/docs/images/bunny16.png"></th>
+<th style="text-align:center"><img src="file:////home/fbwarren/Desktop/cs184/p3-1-pathtracer-sp21-teamname2/docs/images/bunny64.png"></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">1 ray 16x/pixel importance sampling</td>
+<td style="text-align:center">1 ray 64x/pixel importance sampling</td>
+</tr>
+</tbody>
+</table>
+<h2 id="part-4-global-illumination"><strong>Part 4: Global Illumination</strong></h2>
+<ul>
+<li>Pick one scene and compare rendered views with various sample-per-pixel rates, including at least 1, 2, 4, 8, 16, 64, and 1024. Use 4 light rays.</li>
+<li>You will probably want to use the instructional machines for the above renders in order to not burn up your own computer for hours.</li>
+</ul>
+<p>When dealing with lighting, we have to also consider quantaties of light that don't originate from typical light sources. Some surfaces are more reflective than others. It's possible that a lightsource that's <em>behind</em> some object could still contribute to lighting it up by having its light reflected off of a surface in front of the object onto the object's surface. In this project, we have already implemented zero and one bounce (direct) illumination. Now, all we need to do is pretty much the same radiance calculations, but recrsively to measure the movement of light across several surfaces. To prevent infinite recursion, we randomly exit recursion at some probability less than 1. Just like the previous parts, we have to remember to scale the resulting light, this time also scaling by the probability of exiting recursion.</p>
+<p>Here are some examples of direct and indirect illumination.</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center"><img src="file:////home/fbwarren/Desktop/cs184/p3-1-pathtracer-sp21-teamname2/docs/images/spheresglobal1024.png"></th>
+<th style="text-align:center"><img src="file:////home/fbwarren/Desktop/cs184/p3-1-pathtracer-sp21-teamname2/docs/images/spheresindirect.png"></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">Direct illumination (1024 samples per pixel)</td>
+<td style="text-align:center">Indirect illumination (1024 samples per pixel)</td>
+</tr>
+</tbody>
+</table>
+<p>Here are some samples of scenes with various max ray depths. (Each image has 1024 samples per pixel). We can see that huge ray depths don't really add much to an image.</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center"><img src="file:////home/fbwarren/Desktop/cs184/p3-1-pathtracer-sp21-teamname2/docs/images/bunny_depth0.png"></th>
+<th style="text-align:center"><img src="file:////home/fbwarren/Desktop/cs184/p3-1-pathtracer-sp21-teamname2/docs/images/bunny_depth1.png"></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">Depth = 0</td>
+<td style="text-align:center">Depth = 1</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th style="text-align:center"><img src="file:////home/fbwarren/Desktop/cs184/p3-1-pathtracer-sp21-teamname2/docs/images/bunny_depth2.png"></th>
+<th style="text-align:center"><img src="file:////home/fbwarren/Desktop/cs184/p3-1-pathtracer-sp21-teamname2/docs/images/bunny_depth3.png"></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">Depth = 2</td>
+<td style="text-align:center">Depth = 3</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th style="text-align:center"><img src="file:////home/fbwarren/Desktop/cs184/p3-1-pathtracer-sp21-teamname2/docs/images/bunny_depth100.png"></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">Depth = 100</td>
+</tr>
+</tbody>
+</table>
+<p>Here's some spheres rendered with 4 light rays and various sample-per-pixel rates.</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center"><img src="file:////home/fbwarren/Desktop/cs184/p3-1-pathtracer-sp21-teamname2/docs/images/sphere_rays1.png"></th>
+<th style="text-align:center"><img src="file:////home/fbwarren/Desktop/cs184/p3-1-pathtracer-sp21-teamname2/docs/images/sphere_rays2.png"></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">1 sample/pixel</td>
+<td style="text-align:center">2 samples/pixel</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th style="text-align:center"><img src="file:////home/fbwarren/Desktop/cs184/p3-1-pathtracer-sp21-teamname2/docs/images/sphere_rays4.png"></th>
+<th style="text-align:center"><img src="file:////home/fbwarren/Desktop/cs184/p3-1-pathtracer-sp21-teamname2/docs/images/sphere_rays8.png"></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">4 samples/pixel</td>
+<td style="text-align:center">8 samples/pixel</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th style="text-align:center"><img src="file:////home/fbwarren/Desktop/cs184/p3-1-pathtracer-sp21-teamname2/docs/images/sphere_rays16.png"></th>
+<th style="text-align:center"><img src="file:////home/fbwarren/Desktop/cs184/p3-1-pathtracer-sp21-teamname2/docs/images/sphere_rays64.png"></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">16 samples/pixel</td>
+<td style="text-align:center">64 samples/pixel</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th style="text-align:center"><img src="file:////home/fbwarren/Desktop/cs184/p3-1-pathtracer-sp21-teamname2/docs/images/sphere_rays1024.png"></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">1024 samples/pixel</td>
+</tr>
+</tbody>
+</table>
+<h2 id="part-5-adaptive-sampling"><strong>Part 5: Adaptive Sampling</strong></h2>
+<p>TODO:</p>
+<ul>
+<li>Walk through your implementation of the adaptive sampling.</li>
+<li>Pick one scene and render it with at least 2048 samples per pixel. Show a good sampling rate image with clearly visible differences in sampling rate over various regions and pixels. Include both your sample rate image, which shows your how your adaptive sampling changes depending on which part of the image you are rendering, and your noise-free rendered result. Use 1 sample per light and at least 5 for max ray depth.</li>
+</ul>
+<p>While Monte Carlo path tracing has been very effective in modeling the lighting of a scene, it results in large amounts of noise. To prevent this noise without having to just crank up the number of samples per pixel, we apply the same idea of importance sampling to deciding where to take more samples. In statistics, the variance of a set of data represents how &quot;spread out&quot; it is. When we take a set of samples fora pixel, we can masure the variance and decide whether or not we are confident in our findings. Based on this, some pixels will have more samples than other pixels.</p>
+<p>In this project, we sample in batches, and at each batch, we calculate a confidence interval <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>I</mi><mo>=</mo><mn>1.96</mn><mo>⋅</mo><mfrac><mi>σ</mi><msqrt><mi>n</mi></msqrt></mfrac></mrow><annotation encoding="application/x-tex">I = 1.96 \cdot \frac{\sigma}{\sqrt{n}}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.68333em;vertical-align:0em;"></span><span class="mord mathdefault" style="margin-right:0.07847em;">I</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span></span><span class="base"><span class="strut" style="height:0.64444em;vertical-align:0em;"></span><span class="mord">1</span><span class="mord">.</span><span class="mord">9</span><span class="mord">6</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">⋅</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span></span><span class="base"><span class="strut" style="height:1.233392em;vertical-align:-0.538em;"></span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.695392em;"><span style="top:-2.6258665em;"><span class="pstrut" style="height:3em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord sqrt mtight"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.8059050000000001em;"><span class="svg-align" style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="mord mtight" style="padding-left:0.833em;"><span class="mord mathdefault mtight">n</span></span></span><span style="top:-2.765905em;"><span class="pstrut" style="height:3em;"></span><span class="hide-tail mtight" style="min-width:0.853em;height:1.08em;"><svg width='400em' height='1.08em' viewBox='0 0 400000 1080' preserveAspectRatio='xMinYMin slice'><path d='M95,702
+c-2.7,0,-7.17,-2.7,-13.5,-8c-5.8,-5.3,-9.5,-10,-9.5,-14
+c0,-2,0.3,-3.3,1,-4c1.3,-2.7,23.83,-20.7,67.5,-54
+c44.2,-33.3,65.8,-50.3,66.5,-51c1.3,-1.3,3,-2,5,-2c4.7,0,8.7,3.3,12,10
+s173,378,173,378c0.7,0,35.3,-71,104,-213c68.7,-142,137.5,-285,206.5,-429
+c69,-144,104.5,-217.7,106.5,-221
+l0 -0
+c5.3,-9.3,12,-14,20,-14
+H400000v40H845.2724
+s-225.272,467,-225.272,467s-235,486,-235,486c-2.7,4.7,-9,7,-19,7
+c-6,0,-10,-1,-12,-3s-194,-422,-194,-422s-65,47,-65,47z
+M834 80h400000v40h-400000z'/></svg></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.234095em;"><span></span></span></span></span></span></span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.394em;"><span class="pstrut" style="height:3em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathdefault mtight" style="margin-right:0.03588em;">σ</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.538em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span></span></span></span>. Once we reach a desired threshold <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>I</mi><mo>≤</mo><mi>m</mi><mi>a</mi><mi>x</mi><mi>T</mi><mi>o</mi><mi>l</mi><mi>e</mi><mi>r</mi><mi>a</mi><mi>n</mi><mi>c</mi><mi>e</mi><mo>⋅</mo><mi>μ</mi></mrow><annotation encoding="application/x-tex">I \leq maxTolerance \cdot \mu</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8193em;vertical-align:-0.13597em;"></span><span class="mord mathdefault" style="margin-right:0.07847em;">I</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span><span class="mrel">≤</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span></span><span class="base"><span class="strut" style="height:0.69444em;vertical-align:0em;"></span><span class="mord mathdefault">m</span><span class="mord mathdefault">a</span><span class="mord mathdefault">x</span><span class="mord mathdefault" style="margin-right:0.13889em;">T</span><span class="mord mathdefault">o</span><span class="mord mathdefault" style="margin-right:0.01968em;">l</span><span class="mord mathdefault">e</span><span class="mord mathdefault" style="margin-right:0.02778em;">r</span><span class="mord mathdefault">a</span><span class="mord mathdefault">n</span><span class="mord mathdefault">c</span><span class="mord mathdefault">e</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">⋅</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span></span><span class="base"><span class="strut" style="height:0.625em;vertical-align:-0.19444em;"></span><span class="mord mathdefault">μ</span></span></span></span>, then we can stop sampling for that pixel.</p>
 
-    <div class="padded">
-        <p>Use this section to write an overview of the assignment. All of the text in your write-up should be <em>in your own words</em>. If you need to add additional HTML features to this document, you can search the <a href="http://www.w3schools.com/">http://www.w3schools.com/</a> website for instructions. To edit the HTML, you can just copy and paste existing chunks and fill in the text and image file names appropriately.</p>
-        <o>The website writeup is intended to be a self-contained walkthrough of the assignment: we want this to be a piece of work which showcases your understanding of relevant concepts through both mesh images as well as written explanations about what you did to complete each part of the assignment. Try to be as clear and organized as possible when writing about your own output files or extensions to the assignment. We want to understand what you've achieved and how you've done it!</p> 
-        <p>If you are well-versed in web development, feel free to ditch this template and make a better looking page. Just make sure that you include all the components as we've laid them out here. </p>
-
-    <h2 align="middle">Part 1: Ray Generation and Intersection</h2>
-        <p>Describe what you did in Part 1. etc...</p>
-        <div align="center">
-            <table style="width=100%">
-                <tr>
-                    <td align="middle">
-                    <img src="images/example_image.png" width="480px" />
-                    <figcaption align="middle">Results Caption: my bunny is the bounciest bunny</figcaption>
-                </tr>
-            </table>
-        </div>
-        <p>Here is an example of how to include a simple formula:</p>
-        <p align="middle"><pre align="middle">a^2 + b^2 = c^2</pre></p>
-        <p>or, alternatively, you can include an SVG image of a LaTex formula.</p>
-        <p>This time it's your job to copy-paste in the rest of the sections :)</p>
-
-
-
-    <h2 align="middle">A Few Notes On Webpages</h2>
-        <p>Here are a few problems students have encountered in the past. You will probably encounter these problems at some point, so don't wait until right before the deadline to check that everything is working. Test your website on the instructional machines early!</p>
-        <ul>
-        <li>Your main report page should be called index.html.</li>
-        <li>Be sure to include and turn in all of the other files (such as images) that are linked in your report!</li>
-        <li>Use only <em>relative</em> paths to files, such as <pre>"./images/image.jpg"</pre>
-        Do <em>NOT</em> use absolute paths, such as <pre>"/Users/student/Desktop/image.jpg"</pre></li>
-        <li>Pay close attention to your filename extensions. Remember that on UNIX systems (such as the instructional machines), capitalization matters. <pre>.png != .jpeg != .jpg != .JPG</pre>
-        <li>Be sure to adjust the permissions on your files so that they are world readable. For more information on this please see this tutorial: <a href="http://www.grymoire.com/Unix/Permissions.html">http://www.grymoire.com/Unix/Permissions.html</a></li>
-        <li>And again, test your website on the instructional machines early!</li>
-</div>
-</body>
-</html>
-
-
-
-
+    </body>
+    </html>

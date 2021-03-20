@@ -155,10 +155,21 @@ Vector3D PathTracer::at_least_one_bounce_radiance(const Ray &r,
   Vector3D hit_p = r.o + r.d * isect.t;
   Vector3D w_out = w2o * (-r.d);
 
-  Vector3D L_out(0, 0, 0);
+  double pdf, p=0.7;
+  Vector3D L_out, w_in;
+  Vector3D f = isect.bsdf->sample_f(w_out, &w_in, &pdf);
 
+  L_out = one_bounce_radiance(r, isect);
+  if(max_ray_depth > 1 && (coin_flip(p) || r.depth == max_ray_depth)) {
+    Ray bounce = Ray(hit_p, o2w*w_in, (int)r.depth-1);
+    bounce.min_t = EPS_D;
+    Intersection bounceIsect;
+    if (bvh->intersect(bounce, &bounceIsect)){
+      Vector3D bounceSample = at_least_one_bounce_radiance(bounce, bounceIsect);
+      L_out += bounceSample * f * cos_theta(w_in) / (pdf / p);
 
-
+    }
+  }
   return L_out;
 }
 
@@ -181,8 +192,9 @@ Vector3D PathTracer::est_radiance_global_illumination(const Ray &r) {
 
 
   L_out = (isect.t == INF_D) ? debug_shading(r.d) : normal_shading(isect.n);
-
-  return zero_bounce_radiance(r, isect) + one_bounce_radiance(r, isect);
+  if (max_ray_depth == 0)
+      return zero_bounce_radiance(r, isect);
+  return zero_bounce_radiance(r, isect) + at_least_one_bounce_radiance(r, isect);
 }
 
 void PathTracer::raytrace_pixel(size_t x, size_t y) {
@@ -194,7 +206,8 @@ void PathTracer::raytrace_pixel(size_t x, size_t y) {
   Vector2D origin = Vector2D(x, y); // bottom left corner of the pixel
   Vector3D estRadiance = Vector3D(.0, .0, .0);
 
-  for (int i=0; i<num_samples; i++) {
+  float illum, illum2, mean, variance, sd;
+  for (int i=0; i < num_samples; i++) {
       // get random pixel sample and normalize by image dimensions
       Vector2D pixelSample = origin + gridSampler->get_sample();
       pixelSample.x /= sampleBuffer.w;
@@ -202,6 +215,17 @@ void PathTracer::raytrace_pixel(size_t x, size_t y) {
       // generate ray and estimate illumination, update total est radiance
       Ray sampleRay = camera->generate_ray(pixelSample.x, pixelSample.y);
       estRadiance += PathTracer::est_radiance_global_illumination(sampleRay);
+
+      illum += estRadiance.illum();
+      illumSquared += pow(estRadiance.illum(), 2);
+      if (i % samplesPerBatch == 1) {
+          mean = illum / (i + 1);
+          variance = (illumSquared - (illum * illum / (i + 1)) / i);
+          sd = sqrt(variance);
+          if ((1.96 * sd) / sqrt(i + 1) <= maxTolerance * mean) {
+              break;
+          }
+      }
   }
   estRadiance /= ns_aa;     // normalize by number of samples
 

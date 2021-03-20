@@ -27,7 +27,6 @@
 - [**Part 3: Direct Illumination**](#part-3-direct-illumination)
 - [**Part 4: Global Illumination**](#part-4-global-illumination)
 - [**Part 5: Adaptive Sampling**](#part-5-adaptive-sampling)
-- [**EXAMPLE CODE BLOCK**](#example-code-block)
 
 ## **Overview**
 
@@ -90,24 +89,59 @@ The main difference between the two direct illumination implementations is that 
 
 | <img src="./images/bunny1.png">| <img src="./images/bunny4.png"> 
 |:--:|:--:|
-| 1x/pixel importance sampling |  4x/pixel importance sampling | 
+| 1 ray 1x/pixel importance sampling |  1 ray 4x/pixel importance sampling | 
 
 | <img src="./images/bunny16.png">| <img src="./images/bunny64.png"> 
 |:--:|:--:|
-| 16x/pixel importance sampling |  64x/pixel importance sampling | 
+| 1 ray 16x/pixel importance sampling |  1 ray 64x/pixel importance sampling | 
 
 
 
 ## **Part 4: Global Illumination**
 
-TODO:
-
-- Walk through your implementation of the indirect lighting function.
-- Show some images rendered with global (direct and indirect) illumination. Use 1024 samples per pixel.
-- Pick one scene and compare rendered views first with only direct illumination, then only indirect illumination. - Use 1024 samples per pixel. (You will have to edit PathTracer::at_least_one_bounce_radiance(...) in your code to generate these views.)
-- For CBbunny.dae, compare rendered views with max_ray_depth set to 0, 1, 2, 3, and 100 (the -m flag). Use 1024 samples per pixel.
 - Pick one scene and compare rendered views with various sample-per-pixel rates, including at least 1, 2, 4, 8, 16, 64, and 1024. Use 4 light rays.
 - You will probably want to use the instructional machines for the above renders in order to not burn up your own computer for hours.
+
+When dealing with lighting, we have to also consider quantaties of light that don't originate from typical light sources. Some surfaces are more reflective than others. It's possible that a lightsource that's *behind* some object could still contribute to lighting it up by having its light reflected off of a surface in front of the object onto the object's surface. In this project, we have already implemented zero and one bounce (direct) illumination. Now, all we need to do is pretty much the same radiance calculations, but recrsively to measure the movement of light across several surfaces. To prevent infinite recursion, we randomly exit recursion at some probability less than 1. Just like the previous parts, we have to remember to scale the resulting light, this time also scaling by the probability of exiting recursion.  
+
+Here are some examples of direct and indirect illumination.  
+
+| <img src="./images/spheresglobal1024.png">| <img src="./images/spheresindirect.png"> |
+|:--:|:--:|
+| Direct illumination (1024 samples per pixel)| Indirect illumination (1024 samples per pixel) |  
+
+Here are some samples of scenes with various max ray depths. (Each image has 1024 samples per pixel). We can see that huge ray depths don't really add much to an image.
+
+| <img src="./images/bunny_depth0.png">| <img src="./images/bunny_depth1.png"> |
+|:--:|:--:|
+| Depth = 0 | Depth = 1 |
+
+| <img src="./images/bunny_depth2.png">| <img src="./images/bunny_depth3.png"> |
+|:--:|:--:|
+| Depth = 2 | Depth = 3 |
+
+| <img src="./images/bunny_depth100.png">|
+|:--:|
+| Depth = 100 |
+
+Here's some spheres rendered with 4 light rays and various sample-per-pixel rates.  
+
+| <img src="./images/sphere_rays1.png">| <img src="./images/sphere_rays2.png"> |
+|:--:|:--:|
+| 1 sample/pixel | 2 samples/pixel |
+
+| <img src="./images/sphere_rays4.png">| <img src="./images/sphere_rays8.png"> |
+|:--:|:--:|
+| 4 samples/pixel | 8 samples/pixel |
+
+| <img src="./images/sphere_rays16.png">| <img src="./images/sphere_rays64.png"> |
+|:--:| :--: |
+| 16 samples/pixel | 64 samples/pixel |
+
+| <img src="./images/sphere_rays1024.png">|
+| :--: |
+| 1024 samples/pixel |
+
 
 ## **Part 5: Adaptive Sampling**
 
@@ -116,12 +150,7 @@ TODO:
 - Walk through your implementation of the adaptive sampling.
 - Pick one scene and render it with at least 2048 samples per pixel. Show a good sampling rate image with clearly visible differences in sampling rate over various regions and pixels. Include both your sample rate image, which shows your how your adaptive sampling changes depending on which part of the image you are rendering, and your noise-free rendered result. Use 1 sample per light and at least 5 for max ray depth.
 
-## **EXAMPLE CODE BLOCK**
+While Monte Carlo path tracing has been very effective in modeling the lighting of a scene, it results in large amounts of noise. To prevent this noise without having to just crank up the number of samples per pixel, we apply the same idea of importance sampling to deciding where to take more samples. In statistics, the variance of a set of data represents how "spread out" it is. When we take a set of samples fora pixel, we can masure the variance and decide whether or not we are confident in our findings. Based on this, some pixels will have more samples than other pixels.  
 
-```C++
-Halfedge CIter h = v->halfedge();
-do {
-  // Process h->face() in this loop
-  h = h->twin()->next();
-} while (h != v->halfedge());
-```
+In this project, we sample in batches, and at each batch, we calculate a confidence interval $I = 1.96 \cdot \frac{\sigma}{\sqrt{n}}$. Once we reach a desired threshold $I \leq maxTolerance \cdot \mu$, then we can stop sampling for that pixel.  
+
