@@ -148,9 +148,10 @@ Here's some spheres rendered with 4 light rays and various sample-per-pixel rate
 TODO:
 
 - Walk through your implementation of the adaptive sampling.
-- Pick one scene and render it with at least 2048 samples per pixel. Show a good sampling rate image with clearly visible differences in sampling rate over various regions and pixels. Include both your sample rate image, which shows your how your adaptive sampling changes depending on which part of the image you are rendering, and your noise-free rendered result. Use 1 sample per light and at least 5 for max ray depth.
+- Pick one scene and render it with at least 2048 samples per pixel. Show a good sampling rate image with clearly visible differences in sampling rate over various regions and pixels. Include both your sample rate image, which shows your how your adaptive sampling changes depending on which parte of the image you are rendering, and your noise-free rendered result. Use 1 sample per light and at least 5 for max ray depth.
 
 While Monte Carlo path tracing has been very effective in modeling the lighting of a scene, it results in large amounts of noise. To prevent this noise without having to just crank up the number of samples per pixel, we apply the same idea of importance sampling to deciding where to take more samples. In statistics, the variance of a set of data represents how "spread out" it is. When we take a set of samples fora pixel, we can masure the variance and decide whether or not we are confident in our findings. Based on this, some pixels will have more samples than other pixels.  
 
 In this project, we sample in batches, and at each batch, we calculate a confidence interval $I = 1.96 \cdot \frac{\sigma}{\sqrt{n}}$. Once we reach a desired threshold $I \leq maxTolerance \cdot \mu$, then we can stop sampling for that pixel.  
 
+ee
