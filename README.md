@@ -1,3 +1,132 @@
+# pathtracer
+
+Run the executable with the following command  
+`./pathtracer <flags> <path to .dae file>`  
+
+<table>
+<thead>
+<tr>
+<th>Flag and parameters</th>
+<th style="text-align:left">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>-s &lt;INT&gt;</code></td>
+<td style="text-align:left">Number of camera rays per pixel (default=1, should be a power of 2)</td>
+</tr>
+<tr>
+<td><code>-l &lt;INT&gt;</code></td>
+<td style="text-align:left">Number of samples per area light (default=1)</td>
+</tr>
+<tr>
+<td><code>-t &lt;INT&gt;</code></td>
+<td style="text-align:left">Number of render threads (default=1)</td>
+</tr>
+<tr>
+<td><code>-m &lt;INT&gt;</code></td>
+<td style="text-align:left">Maximum ray depth (default=1)</td>
+</tr>
+<tr>
+<td><code>-f &lt;FILENAME&gt;</code></td>
+<td style="text-align:left">Image (.png) file to save output to in windowless mode</td>
+</tr>
+<tr>
+<td><code>-r &lt;INT&gt; &lt;INT&gt;</code></td>
+<td style="text-align:left">Width and height in pixels of output image (if windowless) or of GUI window</td>
+</tr>
+<tr>
+<td><code>-p &lt;x&gt; &lt;y&gt; &lt;dx&gt; &lt;dy&gt;</code></td>
+<td style="text-align:left">Used with the -f flag (windowless mode) to render a cell with its upper left corner at [x,y] and spanning [dx, dy] pixels.</td>
+</tr>
+<tr>
+<td><code>-c &lt;FILENAME&gt;</code></td>
+<td style="text-align:left">Load camera settings file (mainly to set camera position when windowless)</td>
+</tr>
+<tr>
+<td><code>-a &lt;INT&gt; &lt;FLOAT&gt;</code></td>
+<td style="text-align:left">Samples per batch and tolerance for adaptive sampling</td>
+</tr>
+<tr>
+<td><code>-H</code></td>
+<td style="text-align:left">Enable hemisphere sampling for direct lighting</td>
+</tr>
+<tr>
+<td><code>-h</code></td>
+<td style="text-align:left">Print command line help message</td>
+</tr>
+</tbody>
+</table>
+
+**Controls**  
+
+<table>
+<thead>
+<tr>
+<th style="text-align:center">Key</th>
+<th style="text-align:left">Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center"><kbd>E</kbd></td>
+<td style="text-align:left">Mesh-edit mode (default)</td>
+</tr>
+<tr>
+<td style="text-align:center"></td>
+<td style="text-align:left"></td>
+</tr>
+<tr>
+<td style="text-align:center"><kbd>V</kbd></td>
+<td style="text-align:left">BVH visualizer mode</td>
+</tr>
+<tr>
+<td style="text-align:center"><kbd>←</kbd> / <kbd>→</kbd></td>
+<td style="text-align:left">Descend to left/right child (BVH viz)</td>
+</tr>
+<tr>
+<td style="text-align:center"><kbd>↑</kbd></td>
+<td style="text-align:left">Move up to parent node (BVH viz)</td>
+</tr>
+<tr>
+<td style="text-align:center"></td>
+<td style="text-align:left"></td>
+</tr>
+<tr>
+<td style="text-align:center"><kbd>R</kbd></td>
+<td style="text-align:left">Start rendering</td>
+</tr>
+<tr>
+<td style="text-align:center"><kbd>S</kbd></td>
+<td style="text-align:left">Save a screenshot</td>
+</tr>
+<tr>
+<td style="text-align:center"><kbd>-</kbd> / <kbd>+</kbd></td>
+<td style="text-align:left">Decrease/increase area light samples</td>
+</tr>
+<tr>
+<td style="text-align:center"><kbd>[</kbd> / <kbd>]</kbd></td>
+<td style="text-align:left">Decrease/increase camera rays per pixel</td>
+</tr>
+<tr>
+<td style="text-align:center"><kbd>&lt;</kbd> / <kbd>&gt;</kbd></td>
+<td style="text-align:left">Decrease/increase maximum ray depth</td>
+</tr>
+<tr>
+<td style="text-align:center"><kbd>C</kbd></td>
+<td style="text-align:left">Toggle cell render mode</td>
+</tr>
+<tr>
+<td style="text-align:center"><kbd>H</kbd></td>
+<td style="text-align:left">Toggle uniform hemisphere sampling</td>
+</tr>
+<tr>
+<td style="text-align:center"><kbd>D</kbd></td>
+<td style="text-align:left">Save camera settings to file</td>
+</tr>
+</tbody>
+</table>
+
 ## **Contents** <!-- omit in toc -->
 
 - [**Overview**](#overview)
