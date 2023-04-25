@@ -190,7 +190,7 @@ Uniform random sampling was the first implementation. In this, implementation, w
 
 The second lighting estimation implementation was importance sampling. It is pretty much the same, but instead of randomly sampling rays from the intersection point toward a random direction in its hemisphere, we only sample from the light sources. This makes sense since we are trying to measure light in a scene. Why would we want to waste samples on things that don't provide light?
 
-The main difference between the two direct illumination implementations is that uniform sampling was noiser than importance sampling. Here are some pictures rendered using both illumination implementations at different amounts of light rays and light sampling. I personally like the look of noise, it illicits feelings of nostolgia in me even though I'm too young to remember film cameras.
+The main difference between the two direct illumination implementations is that uniform sampling was noiser than importance sampling. Here are some pictures rendered using both illumination implementations at different amounts of light rays and light sampling. I personally like the look of noise, it elicits feelings of nostalgia in me even though I'm too young to remember film cameras.
 | <img src="./docs/images/spheres_uniform.png">| <img src="./docs/images/spheres_importance.png">
 |:--:|:--:|
 | Uniform sampling: (32 samples/pixel,  32 light rays) |  Importance sampling (32 samples/pixel, 32 light rays) |
